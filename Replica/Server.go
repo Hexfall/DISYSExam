@@ -89,7 +89,7 @@ func (s *Server) SendReplicasToReplica(client dictionary.DictionaryServiceClient
 }
 
 func (s *Server) SendValueToReplica(client dictionary.DictionaryServiceClient, key int32, value int32) {
-	_, err := client.SendValue(context.Background(), &dictionary.SetMessage{
+	_, err := client.SendValue(context.Background(), &dictionary.PutMessage{
 		Key:   key,
 		Value: value,
 	})
@@ -102,14 +102,14 @@ func (s *Server) SendValueToReplica(client dictionary.DictionaryServiceClient, k
 }
 
 func (s *Server) SendValuesToReplica(client dictionary.DictionaryServiceClient) {
-	var values []*dictionary.SetMessage
+	var values []*dictionary.PutMessage
 	for k, v := range s.values {
-		values = append(values, &dictionary.SetMessage{
+		values = append(values, &dictionary.PutMessage{
 			Key:   k,
 			Value: v,
 		})
 	}
-	_, err := client.SendValues(context.Background(), &dictionary.SetAllMessage{Values: values})
+	_, err := client.SendValues(context.Background(), &dictionary.PutAllMessage{Values: values})
 	if err == context.DeadlineExceeded {
 		// Timed out, attempting to send replicas to replica.
 		// TODO: Do something. Or leave alone and let HeartBeat monitor take care of it, eventually.
@@ -215,16 +215,16 @@ func (s *Server) Get(ctx context.Context, getMessage *dictionary.GetMessage) (*d
 	return &dictionary.ValueMessage{Value: s.GetValue(getMessage.Key)}, nil
 }
 
-func (s *Server) Set(ctx context.Context, setMessage *dictionary.SetMessage) (*dictionary.SuccessMessage, error) {
+func (s *Server) Put(ctx context.Context, putMessage *dictionary.PutMessage) (*dictionary.SuccessMessage, error) {
 	if !s.isLeader {
 		return &dictionary.SuccessMessage{Success: false}, &dictionary.ImpermissibleError{}
 	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	log.Printf("Received request to set value of %d to %d.\n", setMessage.Key, setMessage.Value)
-	s.values[setMessage.Key] = setMessage.Value
-	go s.BroadcastValue(setMessage.Key, setMessage.Value)
+	log.Printf("Received request to set value of %d to %d.\n", putMessage.Key, putMessage.Value)
+	s.values[putMessage.Key] = putMessage.Value
+	go s.BroadcastValue(putMessage.Key, putMessage.Value)
 
 	return &dictionary.SuccessMessage{Success: true}, nil
 }
@@ -284,7 +284,7 @@ func (s *Server) SendReplicas(ctx context.Context, replicasMessage *dictionary.R
 	return &dictionary.VoidMessage{}, nil
 }
 
-func (s *Server) SendValue(ctx context.Context, setMessage *dictionary.SetMessage) (*dictionary.VoidMessage, error) {
+func (s *Server) SendValue(ctx context.Context, putMessage *dictionary.PutMessage) (*dictionary.VoidMessage, error) {
 	if s.isLeader {
 		// Leader cannot be ordered around.
 		return nil, &dictionary.ImpermissibleError{}
@@ -292,13 +292,13 @@ func (s *Server) SendValue(ctx context.Context, setMessage *dictionary.SetMessag
 	// Should really check whether sender is leader, somehow.
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	log.Printf("Value of %d set to %d by leader.\n", setMessage.Key, setMessage.Value)
-	s.values[setMessage.Key] = setMessage.Value
+	log.Printf("Value of %d set to %d by leader.\n", putMessage.Key, putMessage.Value)
+	s.values[putMessage.Key] = putMessage.Value
 
 	return &dictionary.VoidMessage{}, nil
 }
 
-func (s *Server) SendValues(ctx context.Context, setAllMessage *dictionary.SetAllMessage) (*dictionary.VoidMessage, error) {
+func (s *Server) SendValues(ctx context.Context, putAllMessage *dictionary.PutAllMessage) (*dictionary.VoidMessage, error) {
 	if s.isLeader {
 		// Leader cannot be ordered around.
 		return nil, &dictionary.ImpermissibleError{}
@@ -308,7 +308,7 @@ func (s *Server) SendValues(ctx context.Context, setAllMessage *dictionary.SetAl
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.values = make(map[int32]int32)
-	for _, valuePair := range setAllMessage.Values {
+	for _, valuePair := range putAllMessage.Values {
 		s.values[valuePair.Key] = valuePair.Value
 	}
 

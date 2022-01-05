@@ -5,7 +5,7 @@ option go_package = "https://github.com/Hexfall/DISYSExam;dictionary";
 
 service DictionaryService {
     // Client methods.
-    rpc Set(SetMessage) returns (SuccessMessage);
+    rpc Put(PutMessage) returns (SuccessMessage);
     rpc Get(GetMessage) returns (ValueMessage);
     // Client and Replica methods.
     rpc GetLeader(VoidMessage) returns (LeaderMessage);
@@ -16,19 +16,19 @@ service DictionaryService {
     rpc Join(IpMessage) returns (VoidMessage);
     // Leader-replica methods.
     rpc SendReplicas(ReplicaListMessage) returns (VoidMessage);
-    rpc SendValue(SetMessage) returns (VoidMessage);
-    rpc SendValues(SetAllMessage) returns (VoidMessage);
+    rpc SendValue(PutMessage) returns (VoidMessage);
+    rpc SendValues(PutAllMessage) returns (VoidMessage);
 }
 
 message VoidMessage {}
 
-message SetMessage {
+message PutMessage {
     int32 key = 1;
     int32 value = 2;
 }
 
-message SetAllMessage {
-    repeated SetMessage values = 1;
+message PutAllMessage {
+    repeated PutMessage values = 1;
 }
 
 message GetMessage {

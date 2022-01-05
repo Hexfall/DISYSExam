@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DictionaryServiceClient interface {
 	// Client methods.
-	Set(ctx context.Context, in *SetMessage, opts ...grpc.CallOption) (*SuccessMessage, error)
+	Put(ctx context.Context, in *PutMessage, opts ...grpc.CallOption) (*SuccessMessage, error)
 	Get(ctx context.Context, in *GetMessage, opts ...grpc.CallOption) (*ValueMessage, error)
 	// Client and Replica methods.
 	GetLeader(ctx context.Context, in *VoidMessage, opts ...grpc.CallOption) (*LeaderMessage, error)
@@ -30,8 +30,8 @@ type DictionaryServiceClient interface {
 	Join(ctx context.Context, in *IpMessage, opts ...grpc.CallOption) (*VoidMessage, error)
 	// Leader-replica methods.
 	SendReplicas(ctx context.Context, in *ReplicaListMessage, opts ...grpc.CallOption) (*VoidMessage, error)
-	SendValue(ctx context.Context, in *SetMessage, opts ...grpc.CallOption) (*VoidMessage, error)
-	SendValues(ctx context.Context, in *SetAllMessage, opts ...grpc.CallOption) (*VoidMessage, error)
+	SendValue(ctx context.Context, in *PutMessage, opts ...grpc.CallOption) (*VoidMessage, error)
+	SendValues(ctx context.Context, in *PutAllMessage, opts ...grpc.CallOption) (*VoidMessage, error)
 }
 
 type dictionaryServiceClient struct {
@@ -42,9 +42,9 @@ func NewDictionaryServiceClient(cc grpc.ClientConnInterface) DictionaryServiceCl
 	return &dictionaryServiceClient{cc}
 }
 
-func (c *dictionaryServiceClient) Set(ctx context.Context, in *SetMessage, opts ...grpc.CallOption) (*SuccessMessage, error) {
+func (c *dictionaryServiceClient) Put(ctx context.Context, in *PutMessage, opts ...grpc.CallOption) (*SuccessMessage, error) {
 	out := new(SuccessMessage)
-	err := c.cc.Invoke(ctx, "/dictionary.DictionaryService/Set", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/dictionary.DictionaryService/Put", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c *dictionaryServiceClient) SendReplicas(ctx context.Context, in *ReplicaL
 	return out, nil
 }
 
-func (c *dictionaryServiceClient) SendValue(ctx context.Context, in *SetMessage, opts ...grpc.CallOption) (*VoidMessage, error) {
+func (c *dictionaryServiceClient) SendValue(ctx context.Context, in *PutMessage, opts ...grpc.CallOption) (*VoidMessage, error) {
 	out := new(VoidMessage)
 	err := c.cc.Invoke(ctx, "/dictionary.DictionaryService/SendValue", in, out, opts...)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *dictionaryServiceClient) SendValue(ctx context.Context, in *SetMessage,
 	return out, nil
 }
 
-func (c *dictionaryServiceClient) SendValues(ctx context.Context, in *SetAllMessage, opts ...grpc.CallOption) (*VoidMessage, error) {
+func (c *dictionaryServiceClient) SendValues(ctx context.Context, in *PutAllMessage, opts ...grpc.CallOption) (*VoidMessage, error) {
 	out := new(VoidMessage)
 	err := c.cc.Invoke(ctx, "/dictionary.DictionaryService/SendValues", in, out, opts...)
 	if err != nil {
@@ -128,7 +128,7 @@ func (c *dictionaryServiceClient) SendValues(ctx context.Context, in *SetAllMess
 // for forward compatibility
 type DictionaryServiceServer interface {
 	// Client methods.
-	Set(context.Context, *SetMessage) (*SuccessMessage, error)
+	Put(context.Context, *PutMessage) (*SuccessMessage, error)
 	Get(context.Context, *GetMessage) (*ValueMessage, error)
 	// Client and Replica methods.
 	GetLeader(context.Context, *VoidMessage) (*LeaderMessage, error)
@@ -139,8 +139,8 @@ type DictionaryServiceServer interface {
 	Join(context.Context, *IpMessage) (*VoidMessage, error)
 	// Leader-replica methods.
 	SendReplicas(context.Context, *ReplicaListMessage) (*VoidMessage, error)
-	SendValue(context.Context, *SetMessage) (*VoidMessage, error)
-	SendValues(context.Context, *SetAllMessage) (*VoidMessage, error)
+	SendValue(context.Context, *PutMessage) (*VoidMessage, error)
+	SendValues(context.Context, *PutAllMessage) (*VoidMessage, error)
 	mustEmbedUnimplementedDictionaryServiceServer()
 }
 
@@ -148,8 +148,8 @@ type DictionaryServiceServer interface {
 type UnimplementedDictionaryServiceServer struct {
 }
 
-func (UnimplementedDictionaryServiceServer) Set(context.Context, *SetMessage) (*SuccessMessage, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
+func (UnimplementedDictionaryServiceServer) Put(context.Context, *PutMessage) (*SuccessMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
 }
 func (UnimplementedDictionaryServiceServer) Get(context.Context, *GetMessage) (*ValueMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
@@ -169,10 +169,10 @@ func (UnimplementedDictionaryServiceServer) Join(context.Context, *IpMessage) (*
 func (UnimplementedDictionaryServiceServer) SendReplicas(context.Context, *ReplicaListMessage) (*VoidMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendReplicas not implemented")
 }
-func (UnimplementedDictionaryServiceServer) SendValue(context.Context, *SetMessage) (*VoidMessage, error) {
+func (UnimplementedDictionaryServiceServer) SendValue(context.Context, *PutMessage) (*VoidMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendValue not implemented")
 }
-func (UnimplementedDictionaryServiceServer) SendValues(context.Context, *SetAllMessage) (*VoidMessage, error) {
+func (UnimplementedDictionaryServiceServer) SendValues(context.Context, *PutAllMessage) (*VoidMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendValues not implemented")
 }
 func (UnimplementedDictionaryServiceServer) mustEmbedUnimplementedDictionaryServiceServer() {}
@@ -188,20 +188,20 @@ func RegisterDictionaryServiceServer(s grpc.ServiceRegistrar, srv DictionaryServ
 	s.RegisterService(&DictionaryService_ServiceDesc, srv)
 }
 
-func _DictionaryService_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetMessage)
+func _DictionaryService_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DictionaryServiceServer).Set(ctx, in)
+		return srv.(DictionaryServiceServer).Put(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/dictionary.DictionaryService/Set",
+		FullMethod: "/dictionary.DictionaryService/Put",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DictionaryServiceServer).Set(ctx, req.(*SetMessage))
+		return srv.(DictionaryServiceServer).Put(ctx, req.(*PutMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -315,7 +315,7 @@ func _DictionaryService_SendReplicas_Handler(srv interface{}, ctx context.Contex
 }
 
 func _DictionaryService_SendValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetMessage)
+	in := new(PutMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -327,13 +327,13 @@ func _DictionaryService_SendValue_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/dictionary.DictionaryService/SendValue",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DictionaryServiceServer).SendValue(ctx, req.(*SetMessage))
+		return srv.(DictionaryServiceServer).SendValue(ctx, req.(*PutMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _DictionaryService_SendValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetAllMessage)
+	in := new(PutAllMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -345,7 +345,7 @@ func _DictionaryService_SendValues_Handler(srv interface{}, ctx context.Context,
 		FullMethod: "/dictionary.DictionaryService/SendValues",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DictionaryServiceServer).SendValues(ctx, req.(*SetAllMessage))
+		return srv.(DictionaryServiceServer).SendValues(ctx, req.(*PutAllMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -358,8 +358,8 @@ var DictionaryService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DictionaryServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Set",
-			Handler:    _DictionaryService_Set_Handler,
+			MethodName: "Put",
+			Handler:    _DictionaryService_Put_Handler,
 		},
 		{
 			MethodName: "Get",

@@ -19,7 +19,7 @@ func main() {
 		fe.conn.Close()
 	}()
 
-	fmt.Printf("Type \"set x y\" to assign the value y, to the key x in the system.\n")
+	fmt.Printf("Type \"put x y\" to assign the value y, to the key x in the system.\n")
 	fmt.Printf("Type \"get x\" to retrieve the value stored at x.\n")
 	fmt.Printf("Type \"q\" to exit the program.\n")
 	reader := bufio.NewReader(os.Stdin)
@@ -44,7 +44,7 @@ func main() {
 				break
 			}
 			fmt.Printf("%d\n", fe.Get(x))
-		case "set":
+		case "put":
 			if len(sep) != 3 {
 				fmt.Println("Incorrect number of arguments for command \"set\". Expected 2.")
 				break

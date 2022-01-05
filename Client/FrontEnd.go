@@ -29,7 +29,7 @@ func (fe *FrontEnd) Get(key int) int {
 }
 
 func (fe *FrontEnd) Set(key int, value int) bool {
-	mes, err := fe.client.Set(fe.ctx, &dictionary.SetMessage{
+	mes, err := fe.client.Put(fe.ctx, &dictionary.PutMessage{
 		Key:   int32(key),
 		Value: int32(value),
 	})
