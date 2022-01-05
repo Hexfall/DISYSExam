@@ -17,6 +17,7 @@ service DictionaryService {
     // Leader-replica methods.
     rpc SendReplicas(ReplicaListMessage) returns (VoidMessage);
     rpc SendValue(SetMessage) returns (VoidMessage);
+    rpc SendValues(SetAllMessage) returns (VoidMessage);
 }
 
 message VoidMessage {}
@@ -24,6 +25,10 @@ message VoidMessage {}
 message SetMessage {
     int32 key = 1;
     int32 value = 2;
+}
+
+message SetAllMessage {
+    repeated SetMessage values = 1;
 }
 
 message GetMessage {

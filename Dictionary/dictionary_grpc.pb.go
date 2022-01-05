@@ -31,6 +31,7 @@ type DictionaryServiceClient interface {
 	// Leader-replica methods.
 	SendReplicas(ctx context.Context, in *ReplicaListMessage, opts ...grpc.CallOption) (*VoidMessage, error)
 	SendValue(ctx context.Context, in *SetMessage, opts ...grpc.CallOption) (*VoidMessage, error)
+	SendValues(ctx context.Context, in *SetAllMessage, opts ...grpc.CallOption) (*VoidMessage, error)
 }
 
 type dictionaryServiceClient struct {
@@ -113,6 +114,15 @@ func (c *dictionaryServiceClient) SendValue(ctx context.Context, in *SetMessage,
 	return out, nil
 }
 
+func (c *dictionaryServiceClient) SendValues(ctx context.Context, in *SetAllMessage, opts ...grpc.CallOption) (*VoidMessage, error) {
+	out := new(VoidMessage)
+	err := c.cc.Invoke(ctx, "/dictionary.DictionaryService/SendValues", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DictionaryServiceServer is the server API for DictionaryService service.
 // All implementations must embed UnimplementedDictionaryServiceServer
 // for forward compatibility
@@ -130,6 +140,7 @@ type DictionaryServiceServer interface {
 	// Leader-replica methods.
 	SendReplicas(context.Context, *ReplicaListMessage) (*VoidMessage, error)
 	SendValue(context.Context, *SetMessage) (*VoidMessage, error)
+	SendValues(context.Context, *SetAllMessage) (*VoidMessage, error)
 	mustEmbedUnimplementedDictionaryServiceServer()
 }
 
@@ -160,6 +171,9 @@ func (UnimplementedDictionaryServiceServer) SendReplicas(context.Context, *Repli
 }
 func (UnimplementedDictionaryServiceServer) SendValue(context.Context, *SetMessage) (*VoidMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendValue not implemented")
+}
+func (UnimplementedDictionaryServiceServer) SendValues(context.Context, *SetAllMessage) (*VoidMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendValues not implemented")
 }
 func (UnimplementedDictionaryServiceServer) mustEmbedUnimplementedDictionaryServiceServer() {}
 
@@ -318,6 +332,24 @@ func _DictionaryService_SendValue_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DictionaryService_SendValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetAllMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DictionaryServiceServer).SendValues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/dictionary.DictionaryService/SendValues",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DictionaryServiceServer).SendValues(ctx, req.(*SetAllMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DictionaryService_ServiceDesc is the grpc.ServiceDesc for DictionaryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -356,6 +388,10 @@ var DictionaryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendValue",
 			Handler:    _DictionaryService_SendValue_Handler,
+		},
+		{
+			MethodName: "SendValues",
+			Handler:    _DictionaryService_SendValues_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
