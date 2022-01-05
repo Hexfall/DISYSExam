@@ -1,4 +1,4 @@
-module github.com/Hexfall/DISYSMockExam
+module github.com/Hexfall/DISYSExam
 
 go 1.17
 

@@ -1,4 +1,4 @@
-package increment
+package Dictionary
 
 type ImpermissibleError struct{}
 

@@ -1,11 +1,12 @@
 syntax = "proto3";
 
-package increment;
-option go_package = "https://github.com/Hexfall/DISYSMockExam;increment";
+package dictionary;
+option go_package = "https://github.com/Hexfall/DISYSExam;dictionary";
 
-service IncrementService {
+service DictionaryService {
     // Client methods.
-    rpc Increment(VoidMessage) returns (IncrementMessage);
+    rpc Set(SetMessage) returns (SuccessMessage);
+    rpc Get(GetMessage) returns (ValueMessage);
     // Client and Replica methods.
     rpc GetLeader(VoidMessage) returns (LeaderMessage);
     rpc GetReplicas(VoidMessage) returns (ReplicaListMessage);
@@ -15,13 +16,26 @@ service IncrementService {
     rpc Join(IpMessage) returns (VoidMessage);
     // Leader-replica methods.
     rpc SendReplicas(ReplicaListMessage) returns (VoidMessage);
-    rpc SendValue(IncrementMessage) returns (VoidMessage);
+    rpc SendValue(SetMessage) returns (VoidMessage);
 }
 
 message VoidMessage {}
 
-message IncrementMessage {
-    int64 number = 1;
+message SetMessage {
+    int32 key = 1;
+    int32 value = 2;
+}
+
+message GetMessage {
+    int32 key = 1;
+}
+
+message ValueMessage {
+    int32 value = 1;
+}
+
+message SuccessMessage {
+    bool success = 1;
 }
 
 message IpMessage {

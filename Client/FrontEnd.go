@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	increment "github.com/Hexfall/DISYSMockExam/Increment"
+	dictionary "github.com/Hexfall/DISYSExam/Dictionary"
 	"google.golang.org/grpc"
 	"log"
 	"time"
 )
 
 type FrontEnd struct {
-	client    increment.IncrementServiceClient
+	client    dictionary.IncrementServiceClient
 	conn      *grpc.ClientConn
 	ctx       context.Context
 	backups   []string
@@ -17,7 +17,7 @@ type FrontEnd struct {
 }
 
 func (fe *FrontEnd) Increment() int64 {
-	mes, err := fe.client.Increment(fe.ctx, &increment.VoidMessage{})
+	mes, err := fe.client.Increment(fe.ctx, &dictionary.VoidMessage{})
 	if err != nil {
 		log.Printf("Failed to increment value. Error: %v", err)
 		log.Println("Assuming connection lost to cluster leader.")
@@ -56,11 +56,11 @@ func (fe *FrontEnd) Connect(ip string) {
 	fe.connected = true
 
 	fe.ctx = context.Background()
-	fe.client = increment.NewIncrementServiceClient(fe.conn)
+	fe.client = dictionary.NewIncrementServiceClient(fe.conn)
 
 	// Find the leader of the cluster.
 	log.Println("Querying connected replica for cluster leader.")
-	mes, err := fe.client.GetLeader(fe.ctx, &increment.VoidMessage{})
+	mes, err := fe.client.GetLeader(fe.ctx, &dictionary.VoidMessage{})
 	if err != nil {
 		log.Fatalf("Failed to get leader. Error %v", err)
 	}
@@ -75,7 +75,7 @@ func (fe *FrontEnd) Connect(ip string) {
 }
 
 func (fe *FrontEnd) GetReplicas() {
-	mes, err := fe.client.GetReplicas(fe.ctx, &increment.VoidMessage{})
+	mes, err := fe.client.GetReplicas(fe.ctx, &dictionary.VoidMessage{})
 	if err != nil {
 		log.Fatalf("Failed to retrieve replicas from leader. Error: %v", err)
 	}

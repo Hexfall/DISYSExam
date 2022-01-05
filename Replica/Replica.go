@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	increment "github.com/Hexfall/DISYSMockExam/Increment"
+	dictionary "github.com/Hexfall/DISYSExam/Dictionary"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -22,7 +22,7 @@ func main() {
 		selfAddr:       fmt.Sprintf(":%d", *port),
 		value:          -1,
 		replicaConns:   make(map[string]*grpc.ClientConn),
-		replicaClients: make(map[string]increment.IncrementServiceClient),
+		replicaClients: make(map[string]dictionary.IncrementServiceClient),
 	}
 
 	// gRPC set-up.
@@ -36,7 +36,7 @@ func main() {
 
 	var options []grpc.ServerOption
 	grpcServer := grpc.NewServer(options...)
-	increment.RegisterIncrementServiceServer(grpcServer, &server)
+	dictionary.RegisterIncrementServiceServer(grpcServer, &server)
 
 	if *target != "" {
 		go server.JoinCluster()

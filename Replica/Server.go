@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	increment "github.com/Hexfall/DISYSMockExam/Increment"
+	dictionary "github.com/Hexfall/DISYSExam/Dictionary"
 	"google.golang.org/grpc"
 	"log"
 	"sync"
@@ -10,23 +10,23 @@ import (
 )
 
 type Server struct {
-	increment.UnimplementedIncrementServiceServer
+	dictionary.UnimplementedIncrementServiceServer
 
 	isLeader       bool
 	leaderAddr     string
 	leaderConn     *grpc.ClientConn
-	leaderClient   increment.IncrementServiceClient
+	leaderClient   dictionary.IncrementServiceClient
 	selfAddr       string
 	replicas       []string
 	replicaMutex   sync.Mutex
 	replicaConns   map[string]*grpc.ClientConn
-	replicaClients map[string]increment.IncrementServiceClient
+	replicaClients map[string]dictionary.IncrementServiceClient
 
 	value int64
 	mutex sync.Mutex
 }
 
-func CreateClient(ip string) (*grpc.ClientConn, increment.IncrementServiceClient) {
+func CreateClient(ip string) (*grpc.ClientConn, dictionary.IncrementServiceClient) {
 	var options []grpc.DialOption
 	options = append(options, grpc.WithBlock(), grpc.WithInsecure(), grpc.WithTimeout(3*time.Second))
 	log.Printf("Attempting to establish connection with ip %s...\n", ip)
@@ -37,7 +37,7 @@ func CreateClient(ip string) (*grpc.ClientConn, increment.IncrementServiceClient
 		log.Printf("Successfully connected to %s\n", ip)
 	}
 
-	client := increment.NewIncrementServiceClient(conn)
+	client := dictionary.NewIncrementServiceClient(conn)
 	return conn, client
 }
 
@@ -55,8 +55,8 @@ func (s *Server) BroadcastValue() {
 	}
 }
 
-func (s *Server) SendReplicasToReplica(client increment.IncrementServiceClient) {
-	_, err := client.SendReplicas(context.Background(), &increment.ReplicaListMessage{Ips: s.replicas})
+func (s *Server) SendReplicasToReplica(client dictionary.IncrementServiceClient) {
+	_, err := client.SendReplicas(context.Background(), &dictionary.ReplicaListMessage{Ips: s.replicas})
 	if err == context.DeadlineExceeded {
 		// Timed out, attempting to send replicas to replica.
 		// TODO: Do something.
@@ -65,8 +65,8 @@ func (s *Server) SendReplicasToReplica(client increment.IncrementServiceClient) 
 	}
 }
 
-func (s *Server) SendValueToReplica(client increment.IncrementServiceClient) {
-	_, err := client.SendValue(context.Background(), &increment.IncrementMessage{Number: s.value})
+func (s *Server) SendValueToReplica(client dictionary.IncrementServiceClient) {
+	_, err := client.SendValue(context.Background(), &dictionary.IncrementMessage{Number: s.value})
 	if err == context.DeadlineExceeded {
 		// Timed out, attempting to send replicas to replica.
 		// TODO: Do something. Or leave alone and let HeartBeat monitor take care of it, eventually.
@@ -86,12 +86,12 @@ func removeElement(arr []string, elem string) []string {
 	return arr
 }
 
-func (s *Server) HeartbeatMonitor(ip string, client increment.IncrementServiceClient) {
+func (s *Server) HeartbeatMonitor(ip string, client dictionary.IncrementServiceClient) {
 	var err error = nil
 	for err == nil {
 		// Runs on a loop, checking for replica heartbeat. Exits loop upon receiving an error.
 		time.Sleep(1 * time.Second)
-		_, err = client.HeartBeat(context.Background(), &increment.VoidMessage{})
+		_, err = client.HeartBeat(context.Background(), &dictionary.VoidMessage{})
 	}
 	if err != nil {
 		if err != context.DeadlineExceeded {
@@ -142,7 +142,7 @@ func (s *Server) JoinCluster() {
 	}
 
 	conn, cli := CreateClient(s.leaderAddr)
-	mes, err := cli.GetLeader(context.Background(), &increment.VoidMessage{})
+	mes, err := cli.GetLeader(context.Background(), &dictionary.VoidMessage{})
 	if err != nil {
 		log.Fatalf("Failed to retrieve leader information from %s. Error: %v", s.leaderAddr, err)
 	}
@@ -150,7 +150,7 @@ func (s *Server) JoinCluster() {
 		s.leaderConn = conn
 		s.leaderClient = cli
 
-		_, err := cli.Join(context.Background(), &increment.IpMessage{Ip: s.selfAddr})
+		_, err := cli.Join(context.Background(), &dictionary.IpMessage{Ip: s.selfAddr})
 		if err != nil {
 			log.Fatalf("Failed to join cluster. Error: %v", err)
 		}
@@ -164,10 +164,10 @@ func (s *Server) JoinCluster() {
 
 // gRPC functions.
 
-func (s *Server) Increment(ctx context.Context, void *increment.VoidMessage) (*increment.IncrementMessage, error) {
+func (s *Server) Increment(ctx context.Context, void *dictionary.VoidMessage) (*dictionary.IncrementMessage, error) {
 	if !s.isLeader {
 		// This replica doesn't have the authority to Increment.
-		return nil, &increment.ImpermissibleError{}
+		return nil, &dictionary.ImpermissibleError{}
 	}
 
 	s.mutex.Lock()
@@ -176,23 +176,23 @@ func (s *Server) Increment(ctx context.Context, void *increment.VoidMessage) (*i
 	s.value++
 	log.Printf("Value has been incremented to %d.\n", s.value)
 	go s.BroadcastValue()
-	return &increment.IncrementMessage{Number: s.value}, nil
+	return &dictionary.IncrementMessage{Number: s.value}, nil
 }
 
-func (s *Server) GetLeader(ctx context.Context, void *increment.VoidMessage) (*increment.LeaderMessage, error) {
-	return &increment.LeaderMessage{
+func (s *Server) GetLeader(ctx context.Context, void *dictionary.VoidMessage) (*dictionary.LeaderMessage, error) {
+	return &dictionary.LeaderMessage{
 		Ip:       s.leaderAddr,
 		IsLeader: s.isLeader,
 	}, nil
 }
 
-func (s *Server) GetReplicas(ctx context.Context, void *increment.VoidMessage) (*increment.ReplicaListMessage, error) {
-	return &increment.ReplicaListMessage{Ips: s.replicas}, nil
+func (s *Server) GetReplicas(ctx context.Context, void *dictionary.VoidMessage) (*dictionary.ReplicaListMessage, error) {
+	return &dictionary.ReplicaListMessage{Ips: s.replicas}, nil
 }
 
-func (s *Server) Join(ctx context.Context, ipMessage *increment.IpMessage) (*increment.VoidMessage, error) {
+func (s *Server) Join(ctx context.Context, ipMessage *dictionary.IpMessage) (*dictionary.VoidMessage, error) {
 	if !s.isLeader {
-		return nil, &increment.ImpermissibleError{}
+		return nil, &dictionary.ImpermissibleError{}
 	}
 
 	s.replicaMutex.Lock()
@@ -210,32 +210,32 @@ func (s *Server) Join(ctx context.Context, ipMessage *increment.IpMessage) (*inc
 	// Monitor heartbeat.
 	go s.HeartbeatMonitor(ipMessage.Ip, cli)
 
-	return &increment.VoidMessage{}, nil
+	return &dictionary.VoidMessage{}, nil
 }
 
-func (s *Server) HeartBeat(ctx context.Context, void *increment.VoidMessage) (*increment.VoidMessage, error) {
-	return &increment.VoidMessage{}, nil
+func (s *Server) HeartBeat(ctx context.Context, void *dictionary.VoidMessage) (*dictionary.VoidMessage, error) {
+	return &dictionary.VoidMessage{}, nil
 }
 
-func (s *Server) SendReplicas(ctx context.Context, replicasMessage *increment.ReplicaListMessage) (*increment.VoidMessage, error) {
+func (s *Server) SendReplicas(ctx context.Context, replicasMessage *dictionary.ReplicaListMessage) (*dictionary.VoidMessage, error) {
 	if s.isLeader {
 		// Leader cannot be ordered around.
-		return nil, &increment.ImpermissibleError{}
+		return nil, &dictionary.ImpermissibleError{}
 	}
 	// Should really check whether sender is leader, somehow.
 	s.replicas = replicasMessage.Ips
 
-	return &increment.VoidMessage{}, nil
+	return &dictionary.VoidMessage{}, nil
 }
 
-func (s *Server) SendValue(ctx context.Context, incrementMessage *increment.IncrementMessage) (*increment.VoidMessage, error) {
+func (s *Server) SendValue(ctx context.Context, incrementMessage *dictionary.IncrementMessage) (*dictionary.VoidMessage, error) {
 	if s.isLeader {
 		// Leader cannot be ordered around.
-		return nil, &increment.ImpermissibleError{}
+		return nil, &dictionary.ImpermissibleError{}
 	}
 	// Should really check whether sender is leader, somehow.
 	s.value = incrementMessage.Number
 	log.Printf("Value has been set to %d by leader.\n", incrementMessage.Number)
 
-	return &increment.VoidMessage{}, nil
+	return &dictionary.VoidMessage{}, nil
 }
