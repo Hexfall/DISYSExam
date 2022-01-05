@@ -20,9 +20,9 @@ func main() {
 		isLeader:       *target == "",
 		leaderAddr:     *target,
 		selfAddr:       fmt.Sprintf(":%d", *port),
-		value:          -1,
+		values:         make(map[int32]int32),
 		replicaConns:   make(map[string]*grpc.ClientConn),
-		replicaClients: make(map[string]dictionary.IncrementServiceClient),
+		replicaClients: make(map[string]dictionary.DictionaryServiceClient),
 	}
 
 	// gRPC set-up.
@@ -36,7 +36,7 @@ func main() {
 
 	var options []grpc.ServerOption
 	grpcServer := grpc.NewServer(options...)
-	dictionary.RegisterIncrementServiceServer(grpcServer, &server)
+	dictionary.RegisterDictionaryServiceServer(grpcServer, &server)
 
 	if *target != "" {
 		go server.JoinCluster()
