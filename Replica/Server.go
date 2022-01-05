@@ -214,7 +214,7 @@ func (s *Server) Get(ctx context.Context, getMessage *dictionary.GetMessage) (*d
 
 func (s *Server) Put(ctx context.Context, putMessage *dictionary.PutMessage) (*dictionary.SuccessMessage, error) {
 	if !s.isLeader {
-		return &dictionary.SuccessMessage{Success: false}, &dictionary.ImpermissibleError{}
+		return s.leaderClient.Put(ctx, putMessage)
 	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
