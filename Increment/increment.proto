@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package increment;
+option go_package = "https://github.com/Hexfall/DISYSMockExam;increment";
+
+service IncrementService {
+    // Client methods.
+    rpc Increment(VoidMessage) returns (IncrementMessage);
+    // Client and Replica methods.
+    rpc GetLeader(VoidMessage) returns (LeaderMessage);
+    rpc GetReplicas(VoidMessage) returns (ReplicaListMessage);
+    // Replica methods.
+    rpc HeartBeat(VoidMessage) returns (VoidMessage);
+    // Sub-replica methods.
+    rpc Join(IpMessage) returns (VoidMessage);
+    // Leader-replica methods.
+    rpc SendReplicas(ReplicaListMessage) returns (VoidMessage);
+    rpc SendValue(IncrementMessage) returns (VoidMessage);
+}
+
+message VoidMessage {}
+
+message IncrementMessage {
+    int64 number = 1;
+}
+
+message IpMessage {
+    string ip = 1;
+}
+
+message LeaderMessage {
+    string ip = 1;
+    bool isLeader = 2;
+}
+
+message ReplicaListMessage {
+    repeated string ips = 1;
+}
