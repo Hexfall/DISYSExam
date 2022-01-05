@@ -208,9 +208,6 @@ func (s *Server) JoinCluster() {
 // gRPC functions.
 
 func (s *Server) Get(ctx context.Context, getMessage *dictionary.GetMessage) (*dictionary.ValueMessage, error) {
-	if !s.isLeader {
-		return nil, &dictionary.ImpermissibleError{}
-	}
 	log.Printf("Received request for value of %d. Returning %d.\n", getMessage.Key, s.GetValue(getMessage.Key))
 	return &dictionary.ValueMessage{Value: s.GetValue(getMessage.Key)}, nil
 }
