@@ -34,7 +34,7 @@ func main() {
 		case "q":
 			os.Exit(0)
 		case "get":
-			if len(sep) != 1 {
+			if len(sep) != 2 {
 				fmt.Println("Incorrect number of arguments for command \"get\". Expected 1.")
 				break
 			}
@@ -45,13 +45,13 @@ func main() {
 			}
 			fmt.Printf("%d\n", fe.Get(x))
 		case "set":
-			if len(sep) != 2 {
+			if len(sep) != 3 {
 				fmt.Println("Incorrect number of arguments for command \"set\". Expected 2.")
 				break
 			}
 			x, err1 := strconv.Atoi(sep[1])
 			y, err2 := strconv.Atoi(sep[2])
-			if err1 != nil || err2 == nil {
+			if err1 != nil || err2 != nil {
 				fmt.Println("x and y must be integers.")
 				break
 			}
