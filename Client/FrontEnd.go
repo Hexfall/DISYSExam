@@ -9,28 +9,43 @@ import (
 )
 
 type FrontEnd struct {
-	client    dictionary.IncrementServiceClient
+	client    dictionary.DictionaryServiceClient
 	conn      *grpc.ClientConn
 	ctx       context.Context
 	backups   []string
 	connected bool
 }
 
-func (fe *FrontEnd) Increment() int64 {
-	mes, err := fe.client.Increment(fe.ctx, &dictionary.VoidMessage{})
+func (fe *FrontEnd) Get(key int) int {
+	mes, err := fe.client.Get(fe.ctx, &dictionary.GetMessage{Key: int32(key)})
 	if err != nil {
-		log.Printf("Failed to increment value. Error: %v", err)
-		log.Println("Assuming connection lost to cluster leader.")
-		if len(fe.backups) > 0 {
-			log.Println("Attempting to reconnect to cluster through other entry-point.")
-			fe.Connect(fe.backups[0])
-			return fe.Increment()
-		} else {
-			log.Fatalln("No other replicas known. Terminating program.")
-		}
+		log.Printf("Encountered error whilst requesting value for %d. Error: %v", key, err)
+		fe.LostConnection()
+		return fe.Get(key)
 	}
+
 	go fe.GetReplicas()
-	return mes.Number
+	return int(mes.Value)
+}
+
+func (fe *FrontEnd) Set(key int, value int) bool {
+	mes, err := fe.client.Set(fe.ctx, &dictionary.SetMessage{
+		Key:   int32(key),
+		Value: int32(value),
+	})
+	if err != nil {
+		log.Printf("Encountered error whilst assigning value %d for %d. Error: %v", value, key, err)
+		fe.LostConnection()
+		return fe.Set(key, value)
+	}
+
+	go fe.GetReplicas()
+	return mes.Success
+}
+
+func (fe *FrontEnd) LostConnection() {
+	log.Println("Assuming crash on leader node. Attempting to reconnect to cluster at other entry-point.")
+	fe.Connect(fe.backups[0])
 }
 
 func (fe *FrontEnd) Connect(ip string) {
@@ -56,7 +71,7 @@ func (fe *FrontEnd) Connect(ip string) {
 	fe.connected = true
 
 	fe.ctx = context.Background()
-	fe.client = dictionary.NewIncrementServiceClient(fe.conn)
+	fe.client = dictionary.NewDictionaryServiceClient(fe.conn)
 
 	// Find the leader of the cluster.
 	log.Println("Querying connected replica for cluster leader.")

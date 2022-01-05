@@ -1,4 +1,4 @@
-package Dictionary
+package dictionary
 
 type ImpermissibleError struct{}
 
